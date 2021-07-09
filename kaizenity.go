@@ -4,6 +4,7 @@ import (
     "fmt"
     "log"
     "os"
+    "sort"
     "encoding/json"
     "github.com/rivo/tview"
     "github.com/gdamore/tcell/v2"
@@ -14,11 +15,10 @@ const (
     Version = "1.0.0"
     Hotkeys = "[i] Add  [D] Remove  [j] Select Next  [k] Select Prev  [L] Move Right  [H] Move Left  [q] Quit"
     ColorElem = tcell.ColorBlue
-    FileName = "kaizenitydb.json"
+    DBName = "kaizenitydb.json"
 )
 
 var (
-    pathInit string
     cards    Cards
 
     app = tview.NewApplication()
@@ -32,10 +32,15 @@ type Card struct {
     Pos    int64  `json:"pos"`
 }
 
+// Cards implements sort.Interface for []Card based on the Pos field
 type Cards []Card
 
+func (c Cards) Len() int           { return len(c) }
+func (c Cards) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
+func (c Cards) Less(i, j int) bool { return c[i].Pos < c[j].Pos }
+
 func (c *Cards) ReadCards(path string) error {
-    path += FileName
+    path += DBName
     jsonBlob, err := os.ReadFile(path)
     if err != nil {
         return err
@@ -64,6 +69,7 @@ func mainDraw(columns []string, path string) error {
     if err := cards.ReadCards(path); err != nil {
         return err
     }
+    sort.Sort(Cards(cards))
 
     headerA := newPrimitive(columns[0])
     headerB := newPrimitive(columns[1])
@@ -117,7 +123,7 @@ func mainDraw(columns []string, path string) error {
 
 func main() {
     columnsFlow := []string{"BACKLOG", "TODO", "DOING", "DONE"}
-    pathInit = ""
+    pathInit := ""
 
     if err := mainDraw(columnsFlow, pathInit); err != nil {
         fmt.Println(err)
