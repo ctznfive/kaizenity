@@ -11,6 +11,7 @@ const (
     AppName = "Kaizenity"
     Version = "1.0.0"
     Hotkeys = "[i] Add  [D] Remove  [j] Select Next  [k] Select Prev  [L] Move Right  [H] Move Left  [q] Quit"
+    ColorElem = tcell.ColorBlue
 )
 
 var (
@@ -22,7 +23,7 @@ func mainLogic(columnsFlow []string, pathInit string) (err error) {
     newPrimitive := func(text string) tview.Primitive {
 		return tview.NewTextView().
 			SetTextAlign(tview.AlignCenter).
-            SetTextColor(tcell.ColorBlue).
+            SetTextColor(ColorElem).
 			SetText(text)
 	}
 
