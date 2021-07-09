@@ -4,11 +4,14 @@ import (
     "fmt"
     "log"
 	"github.com/rivo/tview"
+    "github.com/gdamore/tcell/v2"
 )
 
-const appName = "Kaizenity"
-const version = "1.0.0"
-const hotkeys = "[i] Add  [D] Remove  [j] Select Next  [k] Select Prev  [L] Move Right  [H] Move Left  [q] Quit"
+const (
+    AppName = "Kaizenity"
+    Version = "1.0.0"
+    Hotkeys = "[i] Add  [D] Remove  [j] Select Next  [k] Select Prev  [L] Move Right  [H] Move Left  [q] Quit"
+)
 
 var (
     app = tview.NewApplication()
@@ -19,6 +22,7 @@ func mainLogic(columnsFlow []string, pathInit string) (err error) {
     newPrimitive := func(text string) tview.Primitive {
 		return tview.NewTextView().
 			SetTextAlign(tview.AlignCenter).
+            SetTextColor(tcell.ColorBlue).
 			SetText(text)
 	}
 
@@ -32,7 +36,7 @@ func mainLogic(columnsFlow []string, pathInit string) (err error) {
 	columnC := tview.NewList()
 	columnD := tview.NewList()
 
-	footer := newPrimitive("[ " + appName + " " + version + " ]  " + hotkeys)
+	footer := newPrimitive("[ " + AppName + " " + Version + " ]  " + Hotkeys)
 
 	grid := tview.NewGrid().
 		SetRows(1, -1, 1).
