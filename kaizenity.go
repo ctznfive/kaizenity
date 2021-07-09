@@ -53,7 +53,7 @@ func (c *Cards) drawCards(column int, primitive tview.Primitive) {
     }
 }
 
-func mainDraw(columns []string, path string) (err error) {
+func mainDraw(columns []string, path string) error {
     newPrimitive := func(text string) tview.Primitive {
         return tview.NewTextView().
             SetTextAlign(tview.AlignCenter).
@@ -61,7 +61,7 @@ func mainDraw(columns []string, path string) (err error) {
             SetText(text)
         }
 
-    if err = cards.ReadCards(path); err != nil {
+    if err := cards.ReadCards(path); err != nil {
         return err
     }
 
@@ -109,7 +109,7 @@ func mainDraw(columns []string, path string) (err error) {
     cards.drawCards(2, columnC)
     cards.drawCards(3, columnD)
 
-    if err = app.SetRoot(grid, true).EnableMouse(true).Run(); err != nil {
+    if err := app.SetRoot(grid, true).EnableMouse(true).Run(); err != nil {
         log.Fatal(err)
     }
     return nil
