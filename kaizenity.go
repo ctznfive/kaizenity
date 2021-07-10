@@ -62,6 +62,14 @@ func eventInput(event *tcell.EventKey) *tcell.EventKey {
     switch event.Rune() {
     case 'q':
         app.Stop()
+    case 'j':
+        idxCurrent := app.GetFocus().(*tview.List).GetCurrentItem()
+        app.GetFocus().(*tview.List).SetCurrentItem(idxCurrent + 1)
+    case 'k':
+        idxCurrent := app.GetFocus().(*tview.List).GetCurrentItem()
+        if idxCurrent > 0 {
+            app.GetFocus().(*tview.List).SetCurrentItem(idxCurrent - 1)
+        }
     }
     return event
 }
