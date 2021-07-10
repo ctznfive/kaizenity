@@ -13,7 +13,7 @@ import (
 const (
     AppName = "Kaizenity"
     Version = "1.0.0"
-    Hotkeys = "[i] Add  [D] Remove  [j] Select Next  [k] Select Prev  [L] Move Right  [H] Move Left  [q] Quit"
+    Hotkeys = "[i] Add  [D] Remove  [h j k l] Select  [H J K L] Move  [q] Quit"
     ColorElem = tcell.ColorBlue
     DBName = "kaizenitydb.json"
 )
@@ -49,13 +49,21 @@ func (c *Cards) ReadCards(path string) error {
     return err
 }
 
-func (c *Cards) drawCards(column int, primitive tview.Primitive) {
+func (c *Cards) DrawCards(column int, primitive tview.Primitive) {
     primitive.(*tview.List).Clear()
     for _, card := range *c {
         if card.Column == column {
             primitive.(*tview.List).AddItem(card.Name, card.Desc, 0, nil)
         }
     }
+}
+
+func eventInput(event *tcell.EventKey) *tcell.EventKey {
+    switch event.Rune() {
+    case 'q':
+        app.Stop()
+    }
+    return event
 }
 
 func mainDraw(columns []string, path string) error {
@@ -69,7 +77,6 @@ func mainDraw(columns []string, path string) error {
     if err := cards.ReadCards(path); err != nil {
         return err
     }
-    sort.Sort(Cards(cards))
 
     headerA := newPrimitive(columns[0])
     headerB := newPrimitive(columns[1])
@@ -110,14 +117,20 @@ func mainDraw(columns []string, path string) error {
          AddItem(columnD, 1, 3, 1, 1, 0, 100, false).
          AddItem(footer, 2, 0, 1, 4, 0, 0, false)
 
-    cards.drawCards(0, columnA)
-    cards.drawCards(1, columnB)
-    cards.drawCards(2, columnC)
-    cards.drawCards(3, columnD)
+    sort.Sort(Cards(cards))
+    cards.DrawCards(0, columnA)
+    cards.DrawCards(1, columnB)
+    cards.DrawCards(2, columnC)
+    cards.DrawCards(3, columnD)
 
-    if err := app.SetRoot(grid, true).EnableMouse(true).Run(); err != nil {
+    app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+        return eventInput(event)
+    })
+
+    if err := app.SetRoot(grid, true).EnableMouse(true).SetFocus(columnA).Run(); err != nil {
         log.Fatal(err)
     }
+
     return nil
 }
 
