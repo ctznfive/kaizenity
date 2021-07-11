@@ -39,6 +39,15 @@ func (c Cards) Len() int           { return len(c) }
 func (c Cards) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
 func (c Cards) Less(i, j int) bool { return c[i].Pos < c[j].Pos }
 
+func indexOf(element tview.Primitive, columns []tview.Primitive) int {
+	for k, v := range columns {
+		if element == v {
+			return k
+		}
+	}
+	return -1
+}
+
 func (c *Cards) ReadCards(path string) error {
 	path += DBName
 	jsonBlob, err := os.ReadFile(path)
@@ -58,7 +67,7 @@ func (c *Cards) DrawCards(column int, primitive tview.Primitive) {
 	}
 }
 
-func eventInput(event *tcell.EventKey) *tcell.EventKey {
+func eventInput(event *tcell.EventKey, columns []tview.Primitive) *tcell.EventKey {
 	switch event.Rune() {
 	case 'q':
 		app.Stop()
@@ -69,6 +78,26 @@ func eventInput(event *tcell.EventKey) *tcell.EventKey {
 		idxCurrent := app.GetFocus().(*tview.List).GetCurrentItem()
 		if idxCurrent > 0 {
 			app.GetFocus().(*tview.List).SetCurrentItem(idxCurrent - 1)
+		}
+	case 'l':
+		if indexFocus := indexOf(app.GetFocus(), columns); indexFocus != -1 {
+			for i := indexFocus; i < len(columns)-1; i++ {
+				lenNextList := columns[i+1].(*tview.List).GetItemCount()
+				if lenNextList != 0 {
+					app.SetFocus(columns[i+1])
+					break
+				}
+			}
+		}
+	case 'h':
+		if indexFocus := indexOf(app.GetFocus(), columns); indexFocus != -1 {
+			for i := indexFocus; i > 0; i-- {
+				lenPrevList := columns[i-1].(*tview.List).GetItemCount()
+				if lenPrevList != 0 {
+					app.SetFocus(columns[i-1])
+					break
+				}
+			}
 		}
 	}
 	return event
@@ -121,7 +150,7 @@ func mainDraw(columnsStr []string, columnDefault int, path string) error {
 	}
 
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		return eventInput(event)
+		return eventInput(event, columns)
 	})
 
 	if err := app.SetRoot(grid, true).EnableMouse(true).SetFocus(columns[columnDefault]).Run(); err != nil {
