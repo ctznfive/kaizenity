@@ -58,16 +58,11 @@ func createModal(primitive tview.Primitive, x, y int) tview.Primitive {
 }
 
 func addCard(form *tview.Form, columns []tview.Primitive, idColumn int, grid *tview.Grid) {
-
-	idNewCard := 0
-	if len(cards) > 0 {
-		idNewCard = len(cards) - 1
-	}
-
 	inputName := form.GetFormItem(0).(*tview.InputField).GetText()
 	inputDesc := form.GetFormItem(1).(*tview.InputField).GetText()
+
 	if inputName != "" {
-		if idNewCard == 0 {
+		if len(cards) == 0 {
 			cards = append(cards, Card{
 				ID:     0,
 				Name:   inputName,
@@ -77,11 +72,11 @@ func addCard(form *tview.Form, columns []tview.Primitive, idColumn int, grid *tv
 			})
 		} else {
 			cards = append(cards, Card{
-				ID:     cards[idNewCard].ID + 1,
+				ID:     cards[len(cards)-1].ID + 1,
 				Name:   inputName,
 				Desc:   inputDesc,
 				Column: idColumn,
-				Pos:    cards[idNewCard].ID + 1,
+				Pos:    cards[len(cards)-1].ID + 1,
 			})
 		}
 		if err := cards.WriteCards(); err != nil {
@@ -95,12 +90,16 @@ func addCard(form *tview.Form, columns []tview.Primitive, idColumn int, grid *tv
 
 func (c *Cards) ReadCards() error {
 	path := pathInit + DBName
-	jsonBlob, err := os.ReadFile(path)
-	if err != nil {
-		return err
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return c.WriteCards()
+	} else {
+		jsonBlob, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(jsonBlob, c)
+		return nil
 	}
-	err = json.Unmarshal(jsonBlob, c)
-	return nil
 }
 
 func (c *Cards) DrawCards(column int, primitive tview.Primitive) {
