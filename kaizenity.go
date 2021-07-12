@@ -20,8 +20,9 @@ const (
 )
 
 var (
-	cards Cards
-	app   = tview.NewApplication()
+	app       = tview.NewApplication()
+	cards     Cards
+	flagInput bool
 )
 
 type Card struct {
@@ -48,6 +49,46 @@ func indexOf(element tview.Primitive, columns []tview.Primitive) int {
 	return -1
 }
 
+func createModal(primitive tview.Primitive, x, y int) tview.Primitive {
+	return tview.NewGrid().
+		SetColumns(0, x, 0).
+		SetRows(0, y, 0).
+		AddItem(primitive, 1, 1, 1, 1, 0, 0, true)
+}
+
+func addCard(form *tview.Form, columns []tview.Primitive, idColumn int, grid *tview.Grid) {
+
+	idNewCard := 0
+	if len(cards) > 0 {
+		idNewCard = len(cards) - 1
+	}
+
+	inputName := form.GetFormItem(0).(*tview.InputField).GetText()
+	inputDesc := form.GetFormItem(1).(*tview.InputField).GetText()
+	if inputName != "" {
+		if idNewCard == 0 {
+			cards = append(cards, Card{
+				ID:     0,
+				Name:   inputName,
+				Desc:   inputDesc,
+				Column: idColumn,
+				Pos:    0,
+			})
+		} else {
+			cards = append(cards, Card{
+				ID:     cards[idNewCard].ID + 1,
+				Name:   inputName,
+				Desc:   inputDesc,
+				Column: idColumn,
+				Pos:    cards[idNewCard].ID + 1,
+			})
+		}
+		cards.DrawCards(idColumn, columns[idColumn])
+	}
+	flagInput = false
+	app.SetRoot(grid, true).EnableMouse(true).SetFocus(columns[idColumn])
+}
+
 func (c *Cards) ReadCards(path string) error {
 	path += DBName
 	jsonBlob, err := os.ReadFile(path)
@@ -67,21 +108,26 @@ func (c *Cards) DrawCards(column int, primitive tview.Primitive) {
 	}
 }
 
-func eventInput(event *tcell.EventKey, columns []tview.Primitive) *tcell.EventKey {
+func eventInput(event *tcell.EventKey, columns []tview.Primitive, grid *tview.Grid) *tcell.EventKey {
+	if flagInput {
+		return event
+	}
+	focus := app.GetFocus()
+	idFocus := indexOf(focus, columns)
+	idCurrent := focus.(*tview.List).GetCurrentItem()
+
 	switch event.Rune() {
 	case 'q':
 		app.Stop()
 	case 'j':
-		idxCurrent := app.GetFocus().(*tview.List).GetCurrentItem()
-		app.GetFocus().(*tview.List).SetCurrentItem(idxCurrent + 1)
+		focus.(*tview.List).SetCurrentItem(idCurrent + 1)
 	case 'k':
-		idxCurrent := app.GetFocus().(*tview.List).GetCurrentItem()
-		if idxCurrent > 0 {
-			app.GetFocus().(*tview.List).SetCurrentItem(idxCurrent - 1)
+		if idCurrent > 0 {
+			focus.(*tview.List).SetCurrentItem(idCurrent - 1)
 		}
 	case 'l':
-		if indexFocus := indexOf(app.GetFocus(), columns); indexFocus != -1 {
-			for i := indexFocus; i < len(columns)-1; i++ {
+		if idFocus != -1 {
+			for i := idFocus; i < len(columns)-1; i++ {
 				lenNextList := columns[i+1].(*tview.List).GetItemCount()
 				if lenNextList != 0 {
 					app.SetFocus(columns[i+1])
@@ -90,8 +136,8 @@ func eventInput(event *tcell.EventKey, columns []tview.Primitive) *tcell.EventKe
 			}
 		}
 	case 'h':
-		if indexFocus := indexOf(app.GetFocus(), columns); indexFocus != -1 {
-			for i := indexFocus; i > 0; i-- {
+		if idFocus != -1 {
+			for i := idFocus; i > 0; i-- {
 				lenPrevList := columns[i-1].(*tview.List).GetItemCount()
 				if lenPrevList != 0 {
 					app.SetFocus(columns[i-1])
@@ -99,6 +145,24 @@ func eventInput(event *tcell.EventKey, columns []tview.Primitive) *tcell.EventKe
 				}
 			}
 		}
+	case 'i':
+		formNewCard := tview.NewForm().
+			AddInputField("Name: ", "", 70, nil, nil).
+			AddInputField("Description: ", "", 70, nil, nil)
+
+		formNewCard.SetButtonsAlign(tview.AlignCenter).
+			SetBorder(true).
+			SetTitle("Add new card").
+			SetTitleAlign(tview.AlignCenter)
+
+		formNewCard.AddButton("Create", func() {
+			addCard(formNewCard, columns, idFocus, grid)
+		})
+
+		flagInput = true
+		app.SetRoot(createModal(formNewCard, 70, 10), true).
+			EnableMouse(true).
+			SetFocus(formNewCard)
 	}
 	return event
 }
@@ -126,19 +190,8 @@ func mainDraw(columnsStr []string, columnDefault int, path string) error {
 	for i := 0; i < numColumns; i++ {
 		headers = append(headers, newPrimitive(columnsStr[i]))
 		columns = append(columns, tview.NewList().SetSelectedFocusOnly(true))
-
-		// Layout for screens narrower than 100 cells (only default column is visible)
-		if i != columnDefault {
-			grid.AddItem(headers[i], 0, 0, 0, 0, 0, 0, false).
-				AddItem(columns[i], 0, 0, 0, 0, 0, 0, false)
-		} else {
-			grid.AddItem(headers[i], 0, 0, 1, numColumns, 0, 0, false).
-				AddItem(columns[i], 1, 0, 1, numColumns, 0, 0, false)
-		}
-
-		// Layout for screens wider than 100 cells
-		grid.AddItem(headers[i], 0, i, 1, 1, 0, 100, false).
-			AddItem(columns[i], 1, i, 1, 1, 0, 100, false)
+		grid.AddItem(headers[i], 0, i, 1, 1, 0, 0, false).
+			AddItem(columns[i], 1, i, 1, 1, 0, 0, false)
 	}
 
 	footer := newPrimitive("[ " + AppName + " " + Version + " ]  " + Hotkeys)
@@ -150,7 +203,7 @@ func mainDraw(columnsStr []string, columnDefault int, path string) error {
 	}
 
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		return eventInput(event, columns)
+		return eventInput(event, columns, grid)
 	})
 
 	if err := app.SetRoot(grid, true).EnableMouse(true).SetFocus(columns[columnDefault]).Run(); err != nil {
@@ -164,6 +217,7 @@ func main() {
 	columnsStr := []string{"BACKLOG", "TODO", "DOING", "DONE"}
 	columnDefault := 0
 	pathInit := ""
+	flagInput = false
 
 	if err := mainDraw(columnsStr, columnDefault, pathInit); err != nil {
 		fmt.Println(err)
