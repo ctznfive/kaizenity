@@ -132,12 +132,15 @@ func eventInput(event *tcell.EventKey, columns []tview.Primitive, grid *tview.Gr
 	switch event.Rune() {
 	case 'q':
 		app.Stop()
+
 	case 'j':
 		focus.(*tview.List).SetCurrentItem(idCurrent + 1)
+
 	case 'k':
 		if idCurrent > 0 {
 			focus.(*tview.List).SetCurrentItem(idCurrent - 1)
 		}
+
 	case 'l':
 		if idFocus != -1 {
 			for i := idFocus; i < len(columns)-1; i++ {
@@ -148,6 +151,7 @@ func eventInput(event *tcell.EventKey, columns []tview.Primitive, grid *tview.Gr
 				}
 			}
 		}
+
 	case 'h':
 		if idFocus != -1 {
 			for i := idFocus; i > 0; i-- {
@@ -158,6 +162,7 @@ func eventInput(event *tcell.EventKey, columns []tview.Primitive, grid *tview.Gr
 				}
 			}
 		}
+
 	case 'i':
 		formNewCard := tview.NewForm().
 			AddInputField("Name: ", "", 70, nil, nil).
@@ -176,6 +181,26 @@ func eventInput(event *tcell.EventKey, columns []tview.Primitive, grid *tview.Gr
 		app.SetRoot(createModal(formNewCard, 70, 10), true).
 			EnableMouse(true).
 			SetFocus(formNewCard)
+
+	case 'D':
+		i := 0
+		idx := cards[idCurrent].ID
+		for _, card := range cards {
+			if card.ID != idx {
+				cards[i] = card
+				i++
+			}
+		}
+		cards = cards[:i]
+		focus.(*tview.List).RemoveItem(idCurrent)
+
+		if err := cards.WriteCards(); err != nil {
+			fmt.Println(err)
+		}
+		sort.Sort(Cards(cards))
+		for i := 0; i < len(columns); i++ {
+			cards.DrawCards(i, columns[i])
+		}
 	}
 	return event
 }
