@@ -22,6 +22,7 @@ const (
 var (
 	app       = tview.NewApplication()
 	cards     Cards
+	pathInit  string
 	flagInput bool
 )
 
@@ -83,20 +84,23 @@ func addCard(form *tview.Form, columns []tview.Primitive, idColumn int, grid *tv
 				Pos:    cards[idNewCard].ID + 1,
 			})
 		}
+		if err := cards.WriteCards(); err != nil {
+			fmt.Println(err)
+		}
 		cards.DrawCards(idColumn, columns[idColumn])
 	}
 	flagInput = false
 	app.SetRoot(grid, true).EnableMouse(true).SetFocus(columns[idColumn])
 }
 
-func (c *Cards) ReadCards(path string) error {
-	path += DBName
+func (c *Cards) ReadCards() error {
+	path := pathInit + DBName
 	jsonBlob, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 	err = json.Unmarshal(jsonBlob, c)
-	return err
+	return nil
 }
 
 func (c *Cards) DrawCards(column int, primitive tview.Primitive) {
@@ -106,6 +110,16 @@ func (c *Cards) DrawCards(column int, primitive tview.Primitive) {
 			primitive.(*tview.List).AddItem(card.Name, card.Desc, 0, nil)
 		}
 	}
+}
+
+func (c *Cards) WriteCards() error {
+	path := pathInit + DBName
+	jsonBlob, err := json.MarshalIndent(c, "", " ")
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(path, jsonBlob, 0644)
+	return nil
 }
 
 func eventInput(event *tcell.EventKey, columns []tview.Primitive, grid *tview.Grid) *tcell.EventKey {
@@ -167,7 +181,7 @@ func eventInput(event *tcell.EventKey, columns []tview.Primitive, grid *tview.Gr
 	return event
 }
 
-func mainDraw(columnsStr []string, columnDefault int, path string) error {
+func mainDraw(columnsStr []string, columnDefault int) error {
 	var numColumns = len(columnsStr)
 
 	newPrimitive := func(text string) tview.Primitive {
@@ -177,7 +191,7 @@ func mainDraw(columnsStr []string, columnDefault int, path string) error {
 			SetText(text)
 	}
 
-	if err := cards.ReadCards(path); err != nil {
+	if err := cards.ReadCards(); err != nil {
 		return err
 	}
 
@@ -216,10 +230,10 @@ func mainDraw(columnsStr []string, columnDefault int, path string) error {
 func main() {
 	columnsStr := []string{"BACKLOG", "TODO", "DOING", "DONE"}
 	columnDefault := 0
-	pathInit := ""
+	pathInit = ""
 	flagInput = false
 
-	if err := mainDraw(columnsStr, columnDefault, pathInit); err != nil {
+	if err := mainDraw(columnsStr, columnDefault); err != nil {
 		fmt.Println(err)
 	}
 }
