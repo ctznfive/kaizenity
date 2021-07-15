@@ -27,11 +27,10 @@ var (
 )
 
 type Card struct {
-	ID     int64  `json:"id"`
-	Name   string `json:"name"`
-	Desc   string `json:"desc"`
-	Column int    `json:"column"`
-	Pos    int64  `json:"pos"`
+	Col  int    `json:"column"`
+	Pos  int    `json:"position"`
+	Name string `json:"name"`
+	Desc string `json:"description"`
 }
 
 // Cards implements sort.Interface for []Card based on the Pos field
@@ -57,35 +56,36 @@ func createModal(primitive tview.Primitive, x, y int) tview.Primitive {
 		AddItem(primitive, 1, 1, 1, 1, 0, 0, true)
 }
 
-func addCard(form *tview.Form, columns []tview.Primitive, idColumn int, grid *tview.Grid) {
+func (c *Cards) AddCard(form *tview.Form, columns []tview.Primitive, idColumn int, grid *tview.Grid) error {
 	inputName := form.GetFormItem(0).(*tview.InputField).GetText()
 	inputDesc := form.GetFormItem(1).(*tview.InputField).GetText()
 
 	if inputName != "" {
-		if len(cards) == 0 {
-			cards = append(cards, Card{
-				ID:     0,
-				Name:   inputName,
-				Desc:   inputDesc,
-				Column: idColumn,
-				Pos:    0,
+		if len(*c) == 0 {
+			*c = append(*c, Card{
+				Col:  0,
+				Pos:  0,
+				Name: inputName,
+				Desc: inputDesc,
 			})
 		} else {
-			cards = append(cards, Card{
-				ID:     cards[len(cards)-1].ID + 1,
-				Name:   inputName,
-				Desc:   inputDesc,
-				Column: idColumn,
-				Pos:    cards[len(cards)-1].ID + 1,
+			lastPos := columns[idColumn].(*tview.List).GetItemCount()
+			*c = append(*c, Card{
+				Col:  idColumn,
+				Pos:  lastPos,
+				Name: inputName,
+				Desc: inputDesc,
 			})
 		}
-		if err := cards.WriteCards(); err != nil {
-			fmt.Println(err)
+		if err := c.WriteCards(); err != nil {
+			return err
 		}
-		cards.DrawCards(idColumn, columns[idColumn])
+		c.DrawCards(idColumn, columns[idColumn])
 	}
 	flagInput = false
 	app.SetRoot(grid, true).EnableMouse(true).SetFocus(columns[idColumn])
+	app.GetFocus().(*tview.List).SetCurrentItem(app.GetFocus().(*tview.List).GetItemCount() - 1)
+	return nil
 }
 
 func (c *Cards) ReadCards() error {
@@ -105,7 +105,7 @@ func (c *Cards) ReadCards() error {
 func (c *Cards) DrawCards(column int, primitive tview.Primitive) {
 	primitive.(*tview.List).Clear()
 	for _, card := range *c {
-		if card.Column == column {
+		if card.Col == column {
 			primitive.(*tview.List).AddItem(card.Name, card.Desc, 0, nil)
 		}
 	}
@@ -125,25 +125,26 @@ func eventInput(event *tcell.EventKey, columns []tview.Primitive, grid *tview.Gr
 	if flagInput {
 		return event
 	}
-	focus := app.GetFocus()
-	idFocus := indexOf(focus, columns)
-	idCurrent := focus.(*tview.List).GetCurrentItem()
+	focusCol := app.GetFocus()
+	idFocusCol := indexOf(focusCol, columns)
+	lenFocusCol := focusCol.(*tview.List).GetItemCount()
+	posFocusCard := focusCol.(*tview.List).GetCurrentItem()
 
 	switch event.Rune() {
 	case 'q':
 		app.Stop()
 
 	case 'j':
-		focus.(*tview.List).SetCurrentItem(idCurrent + 1)
+		focusCol.(*tview.List).SetCurrentItem(posFocusCard + 1)
 
 	case 'k':
-		if idCurrent > 0 {
-			focus.(*tview.List).SetCurrentItem(idCurrent - 1)
+		if posFocusCard > 0 {
+			focusCol.(*tview.List).SetCurrentItem(posFocusCard - 1)
 		}
 
 	case 'l':
-		if idFocus != -1 {
-			for i := idFocus; i < len(columns)-1; i++ {
+		if idFocusCol != -1 {
+			for i := idFocusCol; i < len(columns)-1; i++ {
 				lenNextList := columns[i+1].(*tview.List).GetItemCount()
 				if lenNextList != 0 {
 					app.SetFocus(columns[i+1])
@@ -153,8 +154,8 @@ func eventInput(event *tcell.EventKey, columns []tview.Primitive, grid *tview.Gr
 		}
 
 	case 'h':
-		if idFocus != -1 {
-			for i := idFocus; i > 0; i-- {
+		if idFocusCol != -1 {
+			for i := idFocusCol; i > 0; i-- {
 				lenPrevList := columns[i-1].(*tview.List).GetItemCount()
 				if lenPrevList != 0 {
 					app.SetFocus(columns[i-1])
@@ -174,7 +175,7 @@ func eventInput(event *tcell.EventKey, columns []tview.Primitive, grid *tview.Gr
 			SetTitleAlign(tview.AlignCenter)
 
 		formNewCard.AddButton("Create", func() {
-			addCard(formNewCard, columns, idFocus, grid)
+			cards.AddCard(formNewCard, columns, idFocusCol, grid)
 		})
 
 		flagInput = true
@@ -183,23 +184,145 @@ func eventInput(event *tcell.EventKey, columns []tview.Primitive, grid *tview.Gr
 			SetFocus(formNewCard)
 
 	case 'D':
-		i := 0
-		idx := cards[idCurrent].ID
-		for _, card := range cards {
-			if card.ID != idx {
+		if lenFocusCol > 0 {
+			i := 0
+			for _, card := range cards {
+				if card.Col == idFocusCol && card.Pos == posFocusCard {
+					continue
+				}
 				cards[i] = card
+				if card.Col == idFocusCol && card.Pos > posFocusCard {
+					cards[i].Pos -= 1
+				}
 				i++
 			}
-		}
-		cards = cards[:i]
-		focus.(*tview.List).RemoveItem(idCurrent)
+			cards = cards[:i]
 
-		if err := cards.WriteCards(); err != nil {
-			fmt.Println(err)
+			if err := cards.WriteCards(); err != nil {
+				fmt.Println(err)
+			}
+			sort.Sort(Cards(cards))
+			for i := 0; i < len(columns); i++ {
+				cards.DrawCards(i, columns[i])
+			}
+			if lenFocusCol == 1 {
+				for i, col := range columns {
+					lenCol := col.(*tview.List).GetItemCount()
+					if lenCol != 0 {
+						app.SetFocus(columns[i])
+						break
+					}
+				}
+			}
 		}
-		sort.Sort(Cards(cards))
-		for i := 0; i < len(columns); i++ {
-			cards.DrawCards(i, columns[i])
+
+	case 'K':
+		if lenFocusCol > 1 && posFocusCard > 0 {
+			idxCur := -1
+			idxPrev := -1
+			for i, card := range cards {
+				if card.Col == idFocusCol {
+					if card.Pos == posFocusCard-1 {
+						idxPrev = i
+					}
+					if card.Pos == posFocusCard {
+						idxCur = i
+					}
+				}
+			}
+			if idxCur != -1 && idxPrev != -1 {
+				cards[idxCur].Pos, cards[idxPrev].Pos = cards[idxPrev].Pos, cards[idxCur].Pos
+			}
+
+			if err := cards.WriteCards(); err != nil {
+				fmt.Println(err)
+			}
+			sort.Sort(Cards(cards))
+			for i := 0; i < len(columns); i++ {
+				cards.DrawCards(i, columns[i])
+			}
+			app.GetFocus().(*tview.List).SetCurrentItem(posFocusCard - 1)
+		}
+
+	case 'J':
+		if lenFocusCol > 1 && posFocusCard < lenFocusCol-1 {
+			idxCur := 0
+			idxNext := 0
+			for i, card := range cards {
+				if card.Col == idFocusCol {
+					if card.Pos == posFocusCard+1 {
+						idxNext = i
+					}
+					if card.Pos == posFocusCard {
+						idxCur = i
+					}
+				}
+			}
+			if idxCur != -1 && idxNext != -1 {
+				cards[idxCur].Pos, cards[idxNext].Pos = cards[idxNext].Pos, cards[idxCur].Pos
+			}
+
+			if err := cards.WriteCards(); err != nil {
+				fmt.Println(err)
+			}
+			sort.Sort(Cards(cards))
+			for i := 0; i < len(columns); i++ {
+				cards.DrawCards(i, columns[i])
+			}
+			app.GetFocus().(*tview.List).SetCurrentItem(posFocusCard + 1)
+		}
+
+	case 'L':
+		if lenFocusCol > 0 && idFocusCol < len(columns)-1 {
+			lenNextCol := columns[idFocusCol+1].(*tview.List).GetItemCount()
+			for i, card := range cards {
+				if card.Col == idFocusCol {
+					if card.Pos == posFocusCard {
+						cards[i].Col += 1
+						cards[i].Pos = lenNextCol
+					}
+					if card.Pos > posFocusCard {
+						cards[i].Pos -= 1
+					}
+				}
+			}
+
+			if err := cards.WriteCards(); err != nil {
+				fmt.Println(err)
+			}
+			sort.Sort(Cards(cards))
+			for i := 0; i < len(columns); i++ {
+				cards.DrawCards(i, columns[i])
+			}
+			app.SetFocus(columns[idFocusCol+1])
+			app.GetFocus().(*tview.List).SetCurrentItem(lenNextCol)
+		}
+
+	case 'H':
+		if lenFocusCol > 0 && idFocusCol > 0 {
+			lenPrevCol := columns[idFocusCol-1].(*tview.List).GetItemCount()
+			for i, card := range cards {
+				if card.Col == idFocusCol {
+					if card.Pos == posFocusCard {
+						cards[i].Col -= 1
+						cards[i].Pos = lenPrevCol
+						app.SetFocus(columns[idFocusCol-1])
+					}
+					if card.Pos > posFocusCard {
+						cards[i].Pos -= 1
+					}
+				}
+			}
+
+			if err := cards.WriteCards(); err != nil {
+				fmt.Println(err)
+			}
+			sort.Sort(Cards(cards))
+			for i := 0; i < len(columns); i++ {
+				cards.DrawCards(i, columns[i])
+			}
+			app.SetFocus(columns[idFocusCol-1])
+			app.GetFocus().(*tview.List).SetCurrentItem(lenPrevCol)
 		}
 	}
 	return event
@@ -244,10 +367,22 @@ func mainDraw(columnsStr []string, columnDefault int) error {
 		return eventInput(event, columns, grid)
 	})
 
-	if err := app.SetRoot(grid, true).EnableMouse(true).SetFocus(columns[columnDefault]).Run(); err != nil {
-		log.Fatal(err)
+	app.SetRoot(grid, true).EnableMouse(true)
+	if columns[columnDefault].(*tview.List).GetItemCount() != 0 {
+		app.SetFocus(columns[columnDefault])
+	} else {
+		for i, col := range columns {
+			lenCol := col.(*tview.List).GetItemCount()
+			if lenCol != 0 {
+				app.SetFocus(columns[i])
+				break
+			}
+		}
 	}
 
+	if err := app.Run(); err != nil {
+		log.Fatal(err)
+	}
 	return nil
 }
 
