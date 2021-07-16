@@ -9,6 +9,19 @@
 
 ![screenshot](kaizenity.png)
 
+## Installation
+Make sure you have setup a Go >=1.6 development environment
+
+It is necessary that the 'GOPATH' environment variable is configured and your 'PATH' includes '$GOPATH/bin'
+
+Please see [docs](https://golang.org/doc/code#GOPATH) page for more information
+
+    $ go install github.com/ctznfive/ctznfive@latest
+
+The binary will be installed into $GOPATH/bin:
+
+    $ kaizenity
+
 ## Key Bindings
 | Key | Function |
 |:---:| --- |
