@@ -24,3 +24,6 @@
 | <kbd>L</kbd> | Move the card to the next column |
 | <kbd>H</kbd> | Move the card to the previous column |
 | <kbd>Q</kbd> | Exit the application |
+
+## Contributing
+If you'd like to contribute, ask questions or share your opinions, please feel free to open an issue
