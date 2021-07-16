@@ -16,6 +16,8 @@ It is necessary that the `GOPATH` environment variable is configured and your `P
 
 Please see [docs](https://golang.org/doc/code#GOPATH) page for more information
 
+Then use the following command:
+
     $ go install github.com/ctznfive/ctznfive@latest
 
 The binary will be installed into $GOPATH/bin:
