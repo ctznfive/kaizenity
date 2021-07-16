@@ -5,7 +5,7 @@
 <a href="https://github.com/ctznfive/kaizenity/blob/main/LICENSE"><img src="https://img.shields.io/github/license/ctznfive/kaizenity" alt="License" /></a>
 </p>
 
-`Kaizenity` is a minimalistic console-based personal `Kanban` board / task manager for small projects with `VI`-like key bindings
+`Kaizenity` is a minimalistic console-based personal [Kanban board](https://en.wikipedia.org/wiki/Kanban_board) / task manager for small projects with `VI`-like key bindings
 
 ![screenshot](kaizenity.png)
 
