@@ -30,7 +30,7 @@ var (
 	// The path where the card database is stored (JSON file)
 	// In the home directory of a user (= "home")
 	// Or in the current program directory (!= "home")
-	pathInit = ""
+	pathInit = "home"
 
 	// The number and names of the board columns
 	columnsStr = []string{"BACKLOG", "TODO", "DOING", "DONE"}
