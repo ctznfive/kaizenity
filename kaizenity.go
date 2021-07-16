@@ -262,6 +262,10 @@ func takeAction(event *tcell.EventKey, columns []tview.Primitive, grid *tview.Gr
 				app.SetRoot(grid, true).EnableMouse(true).SetFocus(columns[idFocusCol])
 				app.GetFocus().(*tview.List).SetCurrentItem(app.GetFocus().(*tview.List).GetItemCount() - 1)
 			})
+			formNewCard.AddButton("Cancel", func() {
+				app.SetRoot(grid, true).EnableMouse(true).SetFocus(columns[idFocusCol])
+				flagInput = false
+			})
 		}
 
 		flagInput = true
@@ -289,6 +293,10 @@ func takeAction(event *tcell.EventKey, columns []tview.Primitive, grid *tview.Gr
 				cards.RefreshCards(columns)
 				app.SetRoot(grid, true).EnableMouse(true).SetFocus(columns[idFocusCol])
 				app.GetFocus().(*tview.List).SetCurrentItem(posFocusCard)
+			})
+			formNewCard.AddButton("Cancel", func() {
+				app.SetRoot(grid, true).EnableMouse(true).SetFocus(columns[idFocusCol])
+				flagInput = false
 			})
 		}
 
