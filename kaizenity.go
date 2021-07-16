@@ -17,7 +17,7 @@ import (
 
 const (
 	AppName   = "Kaizenity"
-	Version   = "1.0.0"
+	Version   = "0.1.0"
 	DBName    = "kaizenitydb.json"
 	Hotkeys   = "[a] Add  [i] Edit  [D] Remove  [h j k l] Select  [H J K L] Move  [Q] Quit"
 	ColorElem = tcell.ColorBlue
