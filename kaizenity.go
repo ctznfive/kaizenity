@@ -271,9 +271,10 @@ func takeAction(event *tcell.EventKey, columns []tview.Primitive, grid *tview.Gr
 
 	// Press [i] to edit the current card
 	case 'i':
+		name, desc := focusCol.(*tview.List).GetItemText(posFocusCard)
 		formNewCard := tview.NewForm().
-			AddInputField("Name: ", "", 70, nil, nil).
-			AddInputField("Description: ", "", 70, nil, nil)
+			AddInputField("Name: ", name, 70, nil, nil).
+			AddInputField("Description: ", desc, 70, nil, nil)
 
 		formNewCard.SetButtonsAlign(tview.AlignCenter).
 			SetBorder(true).
