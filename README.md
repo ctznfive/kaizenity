@@ -24,7 +24,7 @@ The binary will be installed into `$GOPATH/bin`:
     
 ### Compile a program into an executable file
 
-Or you can run the `go build` command to compile the code into an executable:
+Or you can run the `go build` command from the directory with the source files to compile the code into an executable:
 
     $ go build
     
